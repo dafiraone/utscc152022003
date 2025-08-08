@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Upload Item</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Montserrat&display=swap');
+
+    body {
+      font-family: 'Montserrat', Arial, sans-serif;
+      margin: 40px 20px;
+      display: flex;
+      justify-content: center;
+      background-color: #f7f9fc;
+    }
+    main {
+      background: white;
+      padding: 30px 25px 40px;
+      width: 100%;
+      max-width: 420px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgb(0 0 0 / 0.1);
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 25px;
+      color: #34495e;
+    }
+    a {
+      display: block;
+      margin-bottom: 25px;
+      text-align: center;
+      color: #3498db;
+      font-weight: 600;
+      text-decoration: none;
+      transition: color 0.3s ease;
+    }
+    a:hover {
+      color: #1d6fa5;
+    }
+    form {
+      display: flex;
+      flex-direction: column;
+    }
+    label {
+      margin-top: 15px;
+      margin-bottom: 6px;
+      font-weight: 600;
+      color: #2c3e50;
+    }
+    input[type="text"],
+    input[type="number"],
+    input[type="file"] {
+      padding: 10px 12px;
+      font-size: 1rem;
+      border: 1.8px solid #ccc;
+      border-radius: 5px;
+      transition: border-color 0.3s ease;
+    }
+    input[type="text"]:focus,
+    input[type="number"]:focus,
+    input[type="file"]:focus {
+      border-color: #3498db;
+      outline: none;
+    }
+    button {
+      margin-top: 25px;
+      padding: 12px 0;
+      font-weight: 700;
+      font-size: 1.1rem;
+      background-color: #3498db;
+      color: white;
+      border: none;
+      cursor: pointer;
+      border-radius: 6px;
+      box-shadow: 0 4px 8px rgb(52 152 219 / 0.4);
+      transition: background-color 0.3s ease, box-shadow 0.3s ease;
+    }
+    button:disabled {
+      background-color: #7fbcf5;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+    button:hover:not(:disabled) {
+      background-color: #2980b9;
+      box-shadow: 0 5px 15px rgb(41 128 185 / 0.6);
+    }
+    #message {
+      margin-top: 18px;
+      text-align: center;
+      font-weight: 600;
+      min-height: 22px;
+      color: #27ae60;
+    }
+    #message.error {
+      color: #e74c3c;
+    }
+    /* Loading spinner */
+    #loadingSpinner {
+      display: none;
+      margin: 15px auto 0 auto;
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #3498db;
+      border-radius: 50%;
+      width: 28px;
+      height: 28px;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg);}
+      100% { transform: rotate(360deg);}
+    }
+    /* Image preview */
+    #previewContainer {
+      margin-top: 15px;
+      text-align: center;
+    }
+    #previewImage {
+      max-width: 100%;
+      max-height: 180px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgb(0 0 0 / 0.1);
+      object-fit: contain;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Upload Produk</h1>
+    <a href="index.html" aria-label="Go to List Page">Daftar Produk</a>
+    <form id="uploadForm" aria-describedby="message" aria-live="polite" aria-busy="false">
+      <label for="image">Gambar:</label>
+      <input type="file" id="image" name="image" accept="image/*" required aria-required="true" />
+
+      <div id="previewContainer" aria-live="polite" aria-atomic="true" style="display:none;">
+        <img id="previewImage" alt="Selected image preview" />
+      </div>
+
+      <label for="name">Produk:</label>
+      <input type="text" id="name" name="name" required aria-required="true" />
+
+      <label for="price">Harga:</label>
+      <input type="number" id="price" name="price" min="0" step="0.01" required aria-required="true" />
+
+      <button type="submit">Upload</button>
+    </form>
+    <div id="loadingSpinner" role="status" aria-label="Uploading..."></div>
+    <div id="message" role="alert" aria-live="assertive"></div>
+  </main>
+
+  <script>
+    // Image preview
+    const imageInput = document.getElementById('image');
+    const previewContainer = document.getElementById('previewContainer');
+    const previewImage = document.getElementById('previewImage');
+
+    imageInput.addEventListener('change', () => {
+      const file = imageInput.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = e => {
+          previewImage.src = e.target.result;
+          previewContainer.style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+      } else {
+        previewContainer.style.display = 'none';
+        previewImage.src = '';
+      }
+    });
+
+    // Handle form submission with enhanced UX
+    const form = document.getElementById('uploadForm');
+    const message = document.getElementById('message');
+    const loadingSpinner = document.getElementById('loadingSpinner');
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+
+      form.setAttribute('aria-busy', 'true');
+      message.textContent = '';
+      message.classList.remove('error');
+      loadingSpinner.style.display = 'block';
+      const submitButton = form.querySelector('button[type="submit"]');
+      submitButton.disabled = true;
+
+      const formData = new FormData(form);
+
+      try {
+        const response = await fetch('https://uts.mdaffadji.work.gd/api/items', {
+          method: 'POST',
+          body: formData,
+        });
+        if (!response.ok) throw new Error('Upload failed');
+
+        message.textContent = "Upload successful!";
+        form.reset();
+        previewContainer.style.display = 'none';
+
+        // Clear message after 4 seconds
+        setTimeout(() => {
+          message.textContent = '';
+        }, 4000);
+      } catch (error) {
+        message.textContent = "Error uploading item.";
+        message.classList.add('error');
+      } finally {
+        loadingSpinner.style.display = 'none';
+        submitButton.disabled = false;
+        form.setAttribute('aria-busy', 'false');
+      }
+    });
+  </script>
+</body>
+</html>
